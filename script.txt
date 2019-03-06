@@ -1,0 +1,61 @@
+Sys.setenv(JAVA_HOME="C:/Program Files/Java/jdk-11.0.2/")
+library(rJava)
+install.packages("tidyverse")
+install.packages("ggplot2")
+install.packages("rJava")
+install.packages("qdap")
+install.packages("proxy")
+install.packages("wordcloud")
+library(qdap)
+install.packages('tm')
+library(tm)
+library(dplyr)
+leis <- as.matrix(read.csv('tudo.v2.txt', stringsAsFactors = FALSE, sep = '#'))
+leis_df <- as.data.frame(leis, stringsAsFactors = FALSE)
+leis_df <- leis_df %>% mutate(ANO_L = as.integer(ANO))
+leis_df <- leis_df %>% mutate(CORPO_L = nchar(CORPO))
+### para fazer análise com base em um data frame, precisamos de 
+leis <- as.matrix(read.csv('tudo.v3.txt', stringsAsFactors = FALSE, sep = '#'))
+leis_df <- as.data.frame(leis, stringsAsFactors = FALSE)
+leis_df <- leis_df %>% mutate(ano_l = as.numeric(ano))
+leis_df <- leis_df %>% mutate(text_l = nchar(text))
+## primeiro grafico
+ggplot(leis_df, aes(ano_l, text_l)) + geom_point()
+##
+leis_df_corpus <- VCorpus(VectorSource(leis_df$text))
+## leis_df_corpus <- tm_map(leis_df_corpus, tolower)
+## leis_df_corpus <- tm_map(leis_df_corpus, content_transformer(tolower))
+leis_df_corpus <- tm_map(leis_df_corpus, removeNumbers)
+leis_df_corpus <- tm_map(leis_df_corpus, removePunctuation)
+leis_df_corpus <- tm_map(leis_df_corpus, stripWhitespace)
+leis_df_corpus <- tm_map(leis_df_corpus, removeWords, c(stopwords("pt"), "art.", "inciso"))
+## fazendo as matrizes
+leis_df_tdm <- TermDocumentMatrix(leis_df_corpus)
+leis_df_dtm <- DocumentTermMatrix(leis_df_corpus)
+## distâncias
+library(proxy)
+leis_df_tdm_asm <- as.matrix(leis_df_tdm)
+cosine_dist_mat <- as.matrix(dist(t(leis_df_tdm_asm), method = "cosine"))
+diag(cosine_dist_mat) <- NA
+cosine_dist <- apply(cosine_dist_mat, 2, mean, na.rm=TRUE)
+## term frequency plots 
+## da lei 8666
+termos_frequentes_8666 <- sort(as.matrix(leis_df_tdm)[,6], decreasing = TRUE)
+barplot(termos_frequentes_8666[1:20], col = 'tan', las = 2)
+## da diretiva
+termos_frequentes_diretiva <- sort(as.matrix(leis_df_tdm)[,5], decreasing = TRUE)
+barplot(termos_frequentes_diretiva[1:20], col = 'tan', las = 2)
+## wordcloud
+library(wordcloud)
+term_frequency <- rowSums(leis_df_tdm_asm)
+word_frequency <- data.frame(term = names(term_frequency), num=term_frequency)
+wordcloud(word_frequency$term, word_frequency$num, max.words=20, colors = 'red')
+
+
+cleaning (tm_map)
+stopwords('pt')
+stemming
+wordcloud
+cosine distante
+
+
